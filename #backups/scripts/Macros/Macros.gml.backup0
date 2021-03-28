@@ -1,0 +1,7 @@
+// 2021-03-28 12:45:55
+#macro rw room_width
+#macro rh room_height
+
+#macro radians number
+
+#macro let var

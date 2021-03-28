@@ -1,0 +1,158 @@
+// 2021-03-28 15:58:25
+#event properties (no comments/etc. here are saved)
+parent_index = -1;
+uses_physics = false;
+
+#event create
+ants = []; /// @is {Ant[]}
+
+for(i = 0; i < 300; i++)
+{
+    ants[i] = new Ant(rw/2, rh/2, i/300 * pi*2);
+}
+
+pheromones = []; /// @is {Pheromone[]}
+
+quad = [ /// @is {Quad[]}
+    new Quad(new Rectangle(0, 0, rw, rh), 4), //To home
+    new Quad(new Rectangle(0, 0, rw, rh), 4) //To food
+];
+
+quadTimer = 60; // Regenerate quadtree every second
+
+pressX = 0;
+pressY = 0;
+
+#region Camera
+view_enabled = true;
+view_visible[0] = true;
+
+view_camera[0] = camera_create_view(0, 0, rw, rh);
+
+function resize(zoom, ox, oy)
+{
+    #import camera.*
+    
+    ox ??= .5;
+    oy ??= .5;
+    
+    var _w = get_view_width(view_camera[0]),
+        _h = get_view_height(view_camera[0]),
+        _x = get_view_x(view_camera[0]),
+        _y = get_view_y(view_camera[0]);
+        
+    set_view_pos(view_camera[0], _x + (_w - (_w*zoom))*ox, _y + (_h - (_h*zoom))*oy);
+    set_view_size(view_camera[0], _w*zoom, _h*zoom);
+}
+#endregion
+
+#event step_begin
+var deletePheromones = [],
+    deletedPheromones = 0;
+
+if(quadTimer > 0)
+{
+    
+    var l = array_length(pheromones);
+    for(i = 0; i < l; i++)
+    {
+        if(pheromones[i].evaporate(0.05))
+        {
+            array_push(deletePheromones, i);
+            deletedPheromones++;
+        }
+    }
+    
+    quadTimer--;
+}
+else
+{
+    delete quad[0];
+    delete quad[1];
+    
+    quad[0] = new Quad(new Rectangle(0, 0, rw, rh), 4);
+    quad[1] = new Quad(new Rectangle(0, 0, rw, rh), 4);
+    
+    var l = array_length(pheromones);
+    for(i = 0; i < l; i++)
+    {
+        quad[pheromones[i].signal].insert(pheromones[i]);
+        
+        if(pheromones[i].evaporate(0.05))
+        {
+            array_push(deletePheromones, i);
+            deletedPheromones++;
+        }
+    }
+    
+    quadTimer = 60;
+}
+
+for(i = 0; i < deletedPheromones; i++)
+{
+    array_delete(pheromones, deletePheromones[i], 1);
+}
+
+#event step
+if(mouse_check_button(mb_left))
+{
+    // array_push(ants, new Ant(mouse_x, mouse_y, random(pi)));
+    array_push(pheromones, new Pheromone(mouse_x, mouse_y, 0));
+}
+
+if(mouse_check_button_pressed(mb_right))
+{
+    pressX = mouse_x;
+    pressY = mouse_y;
+}
+
+if(mouse_check_button_released(mb_right))
+{
+    array_push(ants, new Ant(pressX, pressY, arctan2(mouse_y-pressY, mouse_x-pressX)));
+}
+
+#region Update
+
+var l = array_length(ants);
+for(i = 0; i < l; i++)
+{
+    ants[i].avoid();
+    ants[i].sense(quad[ants[i].state]);
+    ants[i].update();
+}
+
+#endregion
+
+#region Camera
+if(mouse_wheel_up())
+{
+    resize(.8, window_mouse_get_x()/window_get_width(), window_mouse_get_y()/window_get_height());
+}
+else if(mouse_wheel_down())
+{
+    resize(1.2, window_mouse_get_x()/window_get_width(), window_mouse_get_y()/window_get_height());
+}
+#endregion
+
+#event draw
+
+for(i = 0; i < array_length(pheromones); i++)
+{
+    draw_set_color(pheromones[i].c);
+    draw_set_alpha(pheromones[i].weight);
+    draw_circle(pheromones[i].x, pheromones[i].y, 1, false);
+}
+
+draw_set_alpha(1);
+
+var l = array_length(ants);
+for(i = 0; i < l; i++)
+{
+    
+    ants[i].draw();
+}
+
+#event draw_gui
+draw_set_color(c_white);
+
+draw_text(5, 5, string(fps_real) + "\n" + string(array_length(pheromones)));
