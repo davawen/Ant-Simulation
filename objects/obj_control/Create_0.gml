@@ -1,27 +1,29 @@
-ants = []; /// @is {Ant[]}
-
-for(i = 0; i < 300; i++)
+nest = new Nest(rw/2, rh/2, 50, 100);
+food = []; /// @is {FoodCluster[]}
+for(i = 0; i < 3; i++)
 {
-    ants[i] = new Ant(rw/2, rh/2, i/300 * pi*2);
+    food[i] = new FoodCluster(random(rw), random(rh), irandom(40)+40);
 }
 
+ants = []; /// @is {Ant[]}
 pheromones = []; /// @is {Pheromone[]}
 
-quad = [ /// @is {Quad[]}
-    new Quad(new Rectangle(0, 0, rw, rh), 4), //To home
-    new Quad(new Rectangle(0, 0, rw, rh), 4) //To food
-];
-
+quad = new Quad(new Rectangle(0, 0, rw, rh), 4, 12); /// @is {Quad}
 quadTimer = 60; // Regenerate quadtree every second
 
 pressX = 0;
 pressY = 0;
 
+avrFps = 0;
+
 #region Camera
 view_enabled = true;
 view_visible[0] = true;
 
-view_camera[0] = camera_create_view(0, 0, rw, rh);
+view_camera[0] = camera_create_view(0, 0, 1280, 800);
+
+window_set_size(1280, 800);
+surface_resize(application_surface, 1280, 800);
 
 function resize(zoom, ox, oy)
 {

@@ -52,6 +52,11 @@ function random_gaussian(stretch/*: number*/)/*->number*/
     return (1 - _r*_r*_r - 1)*stretch;
 }
 
+function pseudo_random(seed/*: number*/)/*->number*/
+{
+    return frac(sin(seed)*100000.9752);
+}
+
 function foreach(arr, callback, args/*: any?*/)
 {
     if (args == undefined) args = [];

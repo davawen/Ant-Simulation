@@ -1,33 +1,35 @@
-// 2021-03-28 15:58:25
+// 2021-03-28 23:01:48
 #event properties (no comments/etc. here are saved)
 parent_index = -1;
 uses_physics = false;
 
 #event create
-ants = []; /// @is {Ant[]}
-
-for(i = 0; i < 300; i++)
+nest = new Nest(rw/2, rh/2, 50, 100);
+food = []; /// @is {FoodCluster[]}
+for(i = 0; i < 3; i++)
 {
-    ants[i] = new Ant(rw/2, rh/2, i/300 * pi*2);
+    food[i] = new FoodCluster(random(rw), random(rh), irandom(40)+40);
 }
 
+ants = []; /// @is {Ant[]}
 pheromones = []; /// @is {Pheromone[]}
 
-quad = [ /// @is {Quad[]}
-    new Quad(new Rectangle(0, 0, rw, rh), 4), //To home
-    new Quad(new Rectangle(0, 0, rw, rh), 4) //To food
-];
-
+quad = new Quad(new Rectangle(0, 0, rw, rh), 4, 12); /// @is {Quad}
 quadTimer = 60; // Regenerate quadtree every second
 
 pressX = 0;
 pressY = 0;
 
+avrFps = 0;
+
 #region Camera
 view_enabled = true;
 view_visible[0] = true;
 
-view_camera[0] = camera_create_view(0, 0, rw, rh);
+view_camera[0] = camera_create_view(0, 0, 1280, 800);
+
+window_set_size(1280, 800);
+surface_resize(application_surface, 1280, 800);
 
 function resize(zoom, ox, oy)
 {
@@ -46,58 +48,12 @@ function resize(zoom, ox, oy)
 }
 #endregion
 
-#event step_begin
-var deletePheromones = [],
-    deletedPheromones = 0;
-
-if(quadTimer > 0)
-{
-    
-    var l = array_length(pheromones);
-    for(i = 0; i < l; i++)
-    {
-        if(pheromones[i].evaporate(0.05))
-        {
-            array_push(deletePheromones, i);
-            deletedPheromones++;
-        }
-    }
-    
-    quadTimer--;
-}
-else
-{
-    delete quad[0];
-    delete quad[1];
-    
-    quad[0] = new Quad(new Rectangle(0, 0, rw, rh), 4);
-    quad[1] = new Quad(new Rectangle(0, 0, rw, rh), 4);
-    
-    var l = array_length(pheromones);
-    for(i = 0; i < l; i++)
-    {
-        quad[pheromones[i].signal].insert(pheromones[i]);
-        
-        if(pheromones[i].evaporate(0.05))
-        {
-            array_push(deletePheromones, i);
-            deletedPheromones++;
-        }
-    }
-    
-    quadTimer = 60;
-}
-
-for(i = 0; i < deletedPheromones; i++)
-{
-    array_delete(pheromones, deletePheromones[i], 1);
-}
-
 #event step
-if(mouse_check_button(mb_left))
+
+if(mouse_check_button_pressed(mb_left))
 {
     // array_push(ants, new Ant(mouse_x, mouse_y, random(pi)));
-    array_push(pheromones, new Pheromone(mouse_x, mouse_y, 0));
+    array_push(pheromones, new Pheromone(mouse_x, mouse_y, 1));
 }
 
 if(mouse_check_button_pressed(mb_right))
@@ -113,11 +69,14 @@ if(mouse_check_button_released(mb_right))
 
 #region Update
 
+nest.create(ants);
+
 var l = array_length(ants);
 for(i = 0; i < l; i++)
 {
     ants[i].avoid();
-    ants[i].sense(quad[ants[i].state]);
+    ants[i].sense(quad);
+    ants[i].trail(pheromones, quad);
     ants[i].update();
 }
 
@@ -134,25 +93,65 @@ else if(mouse_wheel_down())
 }
 #endregion
 
+#event step_begin
+var regenerateQuad = quadTimer <= 0;
+
+if(regenerateQuad)
+{
+    delete quad;
+    
+    quad = new Quad(new Rectangle(0, 0, rw, rh), 1, 12);
+    quadTimer = 60;
+}
+else quadTimer--;
+
+var deletePheromones = [],
+    deletedPheromones = 0;
+
+var l = array_length(pheromones);
+for(i = 0; i < l; i++)
+{
+    if(regenerateQuad) quad.insert(pheromones[i]);
+    
+    if(pheromones[i].evaporate(0.05))
+    {
+        array_push(deletePheromones, i);
+        deletedPheromones++;
+    }
+}
+
+for(i = 0; i < deletedPheromones; i++)
+{
+    array_delete(pheromones, deletePheromones[i], 1);
+}
+
 #event draw
+draw_set_color(c_white);
+quad.draw();
 
 for(i = 0; i < array_length(pheromones); i++)
 {
     draw_set_color(pheromones[i].c);
     draw_set_alpha(pheromones[i].weight);
-    draw_circle(pheromones[i].x, pheromones[i].y, 1, false);
+    draw_circle(pheromones[i].x, pheromones[i].y, 1.5, false);
 }
-
 draw_set_alpha(1);
 
 var l = array_length(ants);
 for(i = 0; i < l; i++)
 {
-    
     ants[i].draw();
 }
+
+for(i = 0; i < 3; i++)
+{
+    food[i].draw();
+}
+nest.draw();
 
 #event draw_gui
 draw_set_color(c_white);
 
-draw_text(5, 5, string(fps_real) + "\n" + string(array_length(pheromones)));
+avrFps = (avrFps + fps_real)*.5;
+
+draw_text(5, 5, string(avrFps) + "\n" + string(array_length(pheromones)));

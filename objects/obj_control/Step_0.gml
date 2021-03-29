@@ -1,7 +1,8 @@
-if(mouse_check_button(mb_left))
+
+if(mouse_check_button_pressed(mb_left))
 {
     // array_push(ants, new Ant(mouse_x, mouse_y, random(pi)));
-    array_push(pheromones, new Pheromone(mouse_x, mouse_y, 0));
+    array_push(pheromones, new Pheromone(mouse_x, mouse_y, 1));
 }
 
 if(mouse_check_button_pressed(mb_right))
@@ -17,11 +18,14 @@ if(mouse_check_button_released(mb_right))
 
 #region Update
 
+nest.create(ants);
+
 var l = array_length(ants);
 for(i = 0; i < l; i++)
 {
     ants[i].avoid();
-    ants[i].sense(quad[ants[i].state]);
+    ants[i].sense(quad);
+    ants[i].trail(pheromones, quad);
     ants[i].update();
 }
 

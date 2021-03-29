@@ -1,4 +1,4 @@
-// 2021-03-28 14:27:28
+// 2021-03-28 22:22:44
 function collision_line_point(x1: number, y1: number, x2: number, y2: number, obj: (object|instance), prec: bool, notme: bool)
 {
     var rr = collision_line(x1, y1, x2, y2, obj, prec, notme),
@@ -51,6 +51,11 @@ function random_gaussian(stretch: number)->number
     var _r = random_range(-1, 1);
     
     return (1 - _r*_r*_r - 1)*stretch;
+}
+
+function pseudo_random(seed: number)->number
+{
+    return frac(sin(seed)*100000.9752);
 }
 
 function foreach(arr, callback, args: any?)

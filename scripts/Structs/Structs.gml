@@ -1,61 +1,65 @@
-function Vector2(_x/*: number*/, _y/*: number*/) constructor
+#region Nest Mechanics
+
+function Nest(_x/*: number*/, _y/*: number*/, _size/*: number*/, _amount/*: int*/) constructor
 {
     x = _x;
     y = _y;
+    size = _size;
+    amount = _amount;
     
-    static Add = function(v/*: Vector2*/)/*->void*/
-    {
-        self.x += v.x;
-        self.y += v.y;
-    }
+    food = 0; /// @is {int}
     
-    static divide = function(c/*: number*/)/*->void*/
+    static create = function(ants/*: Ant[]*/)/*->void*/
     {
-        self.x /= c;
-        self.y /= c;
-    }
-    
-    static sqrMag = function()/*->number*/
-    {
-        return self.x*self.x + self.y*self.y;
-    }
-    
-    static normalize = function()
-    {
-        var l = sqrt(self.x*self.x + self.y*self.y);
+        if(amount < 0) return;
         
-        self.x /= l;
-        self.y /= l;
+        var randAngle = random(2*pi);
+        
+        array_push(ants, new Ant(cos(randAngle)*self.size + self.x, sin(randAngle)*self.size + self.y, randAngle));
+        
+        amount--;
+    }
+    
+    static draw = function()
+    {
+        draw_set_color(c_maroon);
+        
+        draw_circle(self.x, self.y, self.size, false);
+        
+        draw_set_color(c_white);
+        draw_text_transformed(self.x, self.y, string(food), 2, 2, 0);
     }
 }
+/// @hint new Nest(x: number, y: number, size: number, amount: int)
 
-// Vector2.Add = function(v1: Vector2, v2: Vector2)->Vector2
-// {
-//     return new Vector2(v1.x + v2.x, v1.y + v2.y);
-// }
-
-/// @hint new Vector2(x: number, y: number)
-// /// @hint Vector2.add(v1: Vector2, v2: Vector2)->Vector2
-
-function Pheromone(_x/*: number*/, _y/*: number*/, _signal/*: int*/) constructor
+function FoodCluster(_x/*: number*/, _y/*: number*/, _amount/*: int*/) constructor
 {
     x = _x;
     y = _y;
+    amount = _amount;
+    id = irandom(10000);
     
-    weight = 1;
-    signal = _signal;
-
-    c = _signal == 0 ? c_blue : c_red; /// @is {int}
-    
-    static evaporate = function(amount/*: number*/)/*->bool*/
+    static draw = function()
     {
-        self.weight -= amount/60;
+        draw_set_color(/*#*/0x98FB98);
         
-        return self.weight <= amount/60;
+        for(i = 0; i < amount; i++)
+        {
+            var randx = pseudo_random(id * i),
+                randy = pseudo_random(id / i);
+            
+            randx = randx*randx*randx;
+            randy = randy*randy*randy;
+            
+            draw_circle(self.x + (randx*2 - 1)*amount, self.y + (randy*2 - 1)*amount, 2.5, false);
+        }
     }
 }
+/// @hint new FoodCluster(x: number, y: number, _amount: int)
 
-/// @hint new Pheromone(x: number, y: number, signal: int)
+#endregion
+
+#region Ant Mechanics
 
 function Ant(_x/*: number*/, _y/*: number*/, _a/*: number*/) constructor
 {
@@ -65,6 +69,7 @@ function Ant(_x/*: number*/, _y/*: number*/, _a/*: number*/) constructor
     turnSpeed = pi/2;
     
     state = 0;
+    timer = irandom(60); //Add pheromone every second
     
     avoiding = false;
     shift = 0;
@@ -147,11 +152,12 @@ function Ant(_x/*: number*/, _y/*: number*/, _a/*: number*/) constructor
         
         self.weigth = [0, 0, 0];
         
-        var _points = quad.query(self.range);
+        var _points = quad.query(self.range, state);
         
         var _direction = new Vector2(cos(self.angle), sin(self.angle));
         
         var _l = array_length(_points);
+        
         for(i = 0; i < _l; i++)
         {
             var _p = _points[i];
@@ -197,13 +203,34 @@ function Ant(_x/*: number*/, _y/*: number*/, _a/*: number*/) constructor
         }
     }
     
+    static senseFood = function(food/*: FoodCluster[]*/)/*->void*/
+    {
+        
+    }
+    
+    static trail = function(pheromones/*: Pheromone[]*/, quad/*: Quad*/)/*->void*/
+    {
+        if(timer > 0)
+        {
+            timer--;
+            return;
+        }
+        
+        var _p = new Pheromone(self.x, self.y, 1-self.state);
+        
+        array_push(pheromones, _p);
+        quad.insert(_p);
+        
+        timer = 60;
+    }
+    
     static update = function()/*->void*/
     {
         self.x += cos(self.angle)/2;
         self.y += sin(self.angle)/2;
         
         self.randomSteerSpeed = random(.4)+.8;
-        self.randomSteerAmount += random_gaussian(1)*self.randomSteerSpeed - (self.randomSteerAmount*.01);
+        self.randomSteerAmount += random_gaussian(1)*self.randomSteerSpeed * .1 - (self.randomSteerAmount*.01);
         
         // console.log(self.randomSteerAmount);
     }
@@ -219,6 +246,71 @@ function Ant(_x/*: number*/, _y/*: number*/, _a/*: number*/) constructor
     }
 }
 /// @hint new Ant(x: number, y: number, angle: number)
+
+function Pheromone(_x/*: number*/, _y/*: number*/, _state/*: int*/) constructor
+{
+    x = _x;
+    y = _y;
+    
+    weight = 1;
+    
+    // 0 : To food
+    // 1 : To home
+    
+    state = _state;
+
+    c = _state == 1 ? c_blue : c_red; /// @is {int}
+    
+    static evaporate = function(amount/*: number*/)/*->bool*/
+    {
+        self.weight -= amount/60;
+        
+        return self.weight <= amount/60;
+    }
+}
+/// @hint new Pheromone(x: number, y: number, state: int)
+
+#endregion
+
+#region Quadtree
+
+function Vector2(_x/*: number*/, _y/*: number*/) constructor
+{
+    x = _x;
+    y = _y;
+    
+    static Add = function(v/*: Vector2*/)/*->void*/
+    {
+        self.x += v.x;
+        self.y += v.y;
+    }
+    
+    static mult = function(c/*: number*/)/*->void*/
+    {
+        self.x *= c;
+        self.y *= c;
+    }
+    
+    static divide = function(c/*: number*/)/*->void*/
+    {
+        self.x /= c;
+        self.y /= c;
+    }
+    
+    static sqrMag = function()/*->number*/
+    {
+        return self.x*self.x + self.y*self.y;
+    }
+    
+    static normalize = function()
+    {
+        var l = sqrt(self.x*self.x + self.y*self.y);
+        
+        self.x /= l;
+        self.y /= l;
+    }
+}
+/// @hint new Vector2(x: number, y: number)
 
 function Rectangle(_x/*: number*/, _y/*: number*/, _w/*: number*/, _h/*: number*/) constructor
 {
@@ -246,13 +338,12 @@ function Rectangle(_x/*: number*/, _y/*: number*/, _w/*: number*/, _h/*: number*
     
     static draw = function()/*->void*/
     {
-        draw_rectangle(self.x, self.y, self.x+self.w+1, self.y+self.h+1, true);
+        draw_rectangle(self.x, self.y, self.x+self.w, self.y+self.h, true);
     }
 }
-
 /// @hint new Rectangle(x: number, y: number, width: number, height: number)
 
-function Quad(_r, _c) constructor
+function Quad(_r/*: Rectangle*/, _c/*: int*/, _md/*: int*/) constructor
 {
     #region Setup
     r = _r;          /// @is {Rectangle}
@@ -261,6 +352,8 @@ function Quad(_r, _c) constructor
     r.y = round(r.y);
     r.w = round(r.w);
     r.h = round(r.h);
+    
+    maxDepth = _md;
     
     capacity = _c;   /// @is {int}
     points = [];     /// @is {Array<Pheromone>}
@@ -274,10 +367,10 @@ function Quad(_r, _c) constructor
     
     static subdivide = function()/*->void*/
     {
-        self.nw = new Quad(new Rectangle(self.r.x             , self.r.y             , self.r.w/2, self.r.h/2), self.capacity);
-        self.ne = new Quad(new Rectangle(self.r.x + self.r.w/2, self.r.y             , self.r.w/2, self.r.h/2), self.capacity);
-        self.sw = new Quad(new Rectangle(self.r.x             , self.r.y + self.r.h/2, self.r.w/2, self.r.h/2), self.capacity);
-        self.se = new Quad(new Rectangle(self.r.x + self.r.w/2, self.r.y + self.r.h/2, self.r.w/2, self.r.h/2), self.capacity);
+        self.nw = new Quad(new Rectangle(self.r.x             , self.r.y             , self.r.w/2 - 1, self.r.h/2 - 1), self.capacity, self.maxDepth-1);
+        self.ne = new Quad(new Rectangle(self.r.x + self.r.w/2, self.r.y             , self.r.w/2    , self.r.h/2 - 1), self.capacity, self.maxDepth-1);
+        self.sw = new Quad(new Rectangle(self.r.x             , self.r.y + self.r.h/2, self.r.w/2 - 1, self.r.h/2    ), self.capacity, self.maxDepth-1);
+        self.se = new Quad(new Rectangle(self.r.x + self.r.w/2, self.r.y + self.r.h/2, self.r.w/2    , self.r.h/2    ), self.capacity, self.maxDepth-1);
        
         self.divided = true;
     }
@@ -288,7 +381,7 @@ function Quad(_r, _c) constructor
         
         var l = array_length(self.points);
         
-        if(l < self.capacity)
+        if(l < self.capacity || maxDepth <= 0)
         {
             self.points[l] = p;
         }
@@ -306,70 +399,52 @@ function Quad(_r, _c) constructor
         }
     }
     
-    static query = function(range/*: Rectangle*/, found/*: Pheromone[]?*/)/*->Pheromone[]*/
+    static query = function(range/*: Rectangle*/, state/*: int*/, found/*: Pheromone[]?*/)/*->Pheromone[]*/
     {
         if (found == undefined) found = [];
         
         if(!self.r.intersects(range)) return found;
         
+        let l = self.divided ? self.capacity : array_length(self.points);
+        for(i = 0; i < l; i++)
+        {
+            let p = self.points[i];
+            
+            if((state == -1 || state == p.state) && range.contain(p)) array_push(found, p);
+        }
+        
         if(self.divided)
         {
-            for(i = 0; i < self.capacity; i++)
-            {
-                var p = self.points[i];
-                
-                if(range.contain(p)) array_push(found, p);
-            }
-            
-            self.nw.query(range, found);
-            self.ne.query(range, found);
-            self.sw.query(range, found);
-            self.se.query(range, found);
-        }
-        else
-        {
-            var l = array_length(self.points);
-            for(i = 0; i < l; i++)
-            {
-                var p = self.points[i];
-                
-                if(range.contain(p)) array_push(found, p);
-            }
+            self.nw.query(range, state, found);
+            self.ne.query(range, state, found);
+            self.sw.query(range, state, found);
+            self.se.query(range, state, found);
         }
         
         return found;
     }
     
     ///Same as query, but only returns the number of points
-    static queryCount = function(range/*: Rectangle*/, found/*: int?*/)/*->int*/
+    static queryCount = function(range/*: Rectangle*/, state/*: int*/, found/*: int?*/)/*->int*/
     {
         if (found == undefined) found = 0;
         
         if(!self.r.intersects(range)) return found;
         
+        let l = self.divided ? self.capacity : array_length(self.points);
+        for(let i = 0; i < l; i++)
+        {
+            let p = self.points[i];
+            
+            if((state == -1 || state == p.state) && range.contain(p)) found++;
+        }
+        
         if(self.divided)
         {
-            for(i = 0; i < self.capacity; i++)
-            {
-                var p = self.points[i];
-                
-                if(range.contain(p)) found++;
-            }
-            
             found = self.nw.queryCount(range, found);
             found = self.ne.queryCount(range, found);
             found = self.sw.queryCount(range, found);
             found = self.se.queryCount(range, found);
-        }
-        else
-        {
-            var l = array_length(self.points);
-            for(i = 0; i < l; i++)
-            {
-                var p = self.points[i];
-                
-                if(range.contain(p)) found++;
-            }
         }
         
         return found;
@@ -377,6 +452,7 @@ function Quad(_r, _c) constructor
     
     static draw = function()/*->void*/
     {
+        draw_set_alpha(self.maxDepth/12);
         self.r.draw();
         
         if(self.divided)
@@ -388,4 +464,6 @@ function Quad(_r, _c) constructor
         }
     }
 }
-/// @hint new Quad(rectangle: Rectangle, capacity: int)
+/// @hint new Quad(rectangle: Rectangle, capacity: int, maxDepth: int)
+
+#endregion
