@@ -5,7 +5,7 @@ for(i = 0; i < array_length(pheromones); i++)
 {
     draw_set_color(pheromones[i].c);
     draw_set_alpha(pheromones[i].weight);
-    draw_circle(pheromones[i].x, pheromones[i].y, 1.5, false);
+    draw_circle(pheromones[i].pos.x, pheromones[i].pos.y, 1.5, false);
 }
 draw_set_alpha(1);
 

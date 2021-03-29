@@ -1,7 +1,10 @@
-// 2021-03-28 22:29:33
+// 2021-03-29 12:01:42
 #macro rw room_width
 #macro rh room_height
 
 #macro radians number
 
 #macro let var
+
+#mfunc distance(x1, y1, x2, y2) sqrt(sqr(x1-x2) + sqr(y1-y2))
+

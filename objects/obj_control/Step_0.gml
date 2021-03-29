@@ -16,6 +16,16 @@ if(mouse_check_button_released(mb_right))
     array_push(ants, new Ant(pressX, pressY, arctan2(mouse_y-pressY, mouse_x-pressX)));
 }
 
+if(mouse_check_button_pressed(mb_middle))
+{
+    var kPoints = quad.kNearest(mouse_x, mouse_y, 4);
+    
+    for(i = 0; i < array_length(kPoints); i++)
+    {
+        kPoints[i].c = c_yellow;
+    }
+}
+
 #region Update
 
 nest.create(ants);

@@ -1,10 +1,10 @@
-// 2021-03-28 23:01:48
+// 2021-03-29 12:44:02
 #event properties (no comments/etc. here are saved)
 parent_index = -1;
 uses_physics = false;
 
 #event create
-nest = new Nest(rw/2, rh/2, 50, 100);
+nest = new Nest(rw/2, rh/2, 50, 0);
 food = []; /// @is {FoodCluster[]}
 for(i = 0; i < 3; i++)
 {
@@ -65,6 +65,16 @@ if(mouse_check_button_pressed(mb_right))
 if(mouse_check_button_released(mb_right))
 {
     array_push(ants, new Ant(pressX, pressY, arctan2(mouse_y-pressY, mouse_x-pressX)));
+}
+
+if(mouse_check_button_pressed(mb_middle))
+{
+    var kPoints = quad.kNearest(mouse_x, mouse_y, 4);
+    
+    for(i = 0; i < array_length(kPoints); i++)
+    {
+        kPoints[i].c = c_yellow;
+    }
 }
 
 #region Update
@@ -133,7 +143,7 @@ for(i = 0; i < array_length(pheromones); i++)
 {
     draw_set_color(pheromones[i].c);
     draw_set_alpha(pheromones[i].weight);
-    draw_circle(pheromones[i].x, pheromones[i].y, 1.5, false);
+    draw_circle(pheromones[i].pos.x, pheromones[i].pos.y, 1.5, false);
 }
 draw_set_alpha(1);
 

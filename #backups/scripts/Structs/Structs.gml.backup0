@@ -1,4 +1,4 @@
-// 2021-03-28 23:01:18
+// 2021-03-29 12:44:13
 #region Nest Mechanics
 
 function Nest(_x: number, _y: number, _size: number, _amount: int) constructor
@@ -12,7 +12,7 @@ function Nest(_x: number, _y: number, _size: number, _amount: int) constructor
     
     static create = function(ants: Ant[])->void
     {
-        if(amount < 0) return;
+        if(amount <= 0) return;
         
         var randAngle = random(2*pi);
         
@@ -100,7 +100,7 @@ function Ant(_x: number, _y: number, _a: number) constructor
             
             if(point.inst != noone)
             {
-                var dist = sqrt(sqr(self.x - point.x) + sqr(self.y - point.y))+1;
+                var dist = distance(self.x, self.y, point.x, point.y)+1;
                 
                 mult = min(1/dist, 1);
             }
@@ -161,7 +161,7 @@ function Ant(_x: number, _y: number, _a: number) constructor
         
         for(i = 0; i < _l; i++)
         {
-            var _p = _points[i];
+            var _p = _points[i].pos;
             
             var _relativePos = new Vector2(_p.x - self.x, _p.y - self.y);
             
@@ -250,8 +250,7 @@ function Ant(_x: number, _y: number, _a: number) constructor
 
 function Pheromone(_x: number, _y: number, _state: int) constructor
 {
-    x = _x;
-    y = _y;
+    pos = new Vector2(_x, _y);
     
     weight = 1;
     
@@ -329,12 +328,38 @@ function Rectangle(_x: number, _y: number, _w: number, _h: number) constructor
         return true;
     }
     
-    static contain = function(p: Pheromone)->bool
+    static contain = function(pos: Vector2)->bool
     {
-        return p.x >= min(self.x, self.x + self.w) &&
-               p.y >= min(self.y, self.y + self.h) &&
-               p.x <  max(self.x, self.x + self.w) &&
-               p.y <  max(self.y, self.y + self.h);
+        var x2 = self.x + self.w,
+            y2 = self.y + self.h;
+        
+        return pos.x >= min(self.x, x2) &&
+               pos.y >= min(self.y, y2) &&
+               pos.x <  max(self.x, x2) &&
+               pos.y <  max(self.y, y2);
+    }
+    
+    static minDistToPoint = function(pos: Vector2)->number
+    {
+        var x2 = self.x + self.w,
+            y2 = self.y + self.h;
+        
+        var dx1 = pos.x - self.x,
+            dy1 = pos.y - self.y,
+            dx2 = dx1 - self.w,
+            dy2 = dy1 - self.h;
+            
+        if(dx1*dx2 < 0) // X is between x1 and x2
+        {
+            return dy1*dy2 < 0 ? 0 : min(abs(dy1), abs(dy2));
+        }
+        else if(dy1*dy2 < 0) // Y is between y1 and y2
+        {
+            //We already know it can't be in the rectangle
+            return min(abs(dx1), abs(dx2));
+        }
+        
+        return min(distance(p.x, p.y, self.x, self.y), distance(p.x, p.y, x2, y2), distance(p.x, p.y, self.x, y2), distance(p.x, p.y, x2, self.y));
     }
     
     static draw = function()->void
@@ -378,7 +403,7 @@ function Quad(_r: Rectangle, _c: int, _md: int) constructor
     
     static insert = function(p: Pheromone)->void
     {
-        if(!self.r.contain(p)) return;
+        if(!self.r.contain(p.pos)) return;
         
         var l = array_length(self.points);
         
@@ -400,6 +425,44 @@ function Quad(_r: Rectangle, _c: int, _md: int) constructor
         }
     }
     
+    static kNearest = function(x: number, y: number, k: int, nodes: Quad[]?, found: Pheromone[]?)->Pheromone[]
+    {
+        if(!self.r.contain(new Vector2(x, y))) return [];
+        
+        nodes ??= [];
+        found ??= [];
+        
+        array_push(nodes, self);
+        
+        if(!self.divided) //Reached end of tree
+        {
+            var l = array_length(self.points);
+            for(i = 0; i < l; i++)
+            {
+                if(array_length(found) > k) break;
+                
+                array_push(found, self.points[i]);
+            }
+        }
+        else
+        {
+            self.nw.kNearest(x, y, k, nodes, found);
+            self.ne.kNearest(x, y, k, nodes, found);
+            self.sw.kNearest(x, y, k, nodes, found);
+            self.se.kNearest(x, y, k, nodes, found);
+            
+            var l = array_length(self.points);
+            for(i = 0; i < l; i++)
+            {
+                if(array_length(found) > k) break;
+                
+                array_push(found, self.points[i]);
+            }
+        }
+        
+        return found;
+    }
+    
     static query = function(range: Rectangle, state: int, found: Pheromone[]?)->Pheromone[]
     {
         found ??= [];
@@ -411,7 +474,7 @@ function Quad(_r: Rectangle, _c: int, _md: int) constructor
         {
             let p = self.points[i];
             
-            if((state == -1 || state == p.state) && range.contain(p)) array_push(found, p);
+            if((state == -1 || state == p.state) && range.contain(p.pos)) array_push(found, p);
         }
         
         if(self.divided)
@@ -437,7 +500,7 @@ function Quad(_r: Rectangle, _c: int, _md: int) constructor
         {
             let p = self.points[i];
             
-            if((state == -1 || state == p.state) && range.contain(p)) found++;
+            if((state == -1 || state == p.state) && range.contain(p.pos)) found++;
         }
         
         if(self.divided)

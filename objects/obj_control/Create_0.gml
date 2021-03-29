@@ -1,4 +1,4 @@
-nest = new Nest(rw/2, rh/2, 50, 100);
+nest = new Nest(rw/2, rh/2, 50, 0);
 food = []; /// @is {FoodCluster[]}
 for(i = 0; i < 3; i++)
 {
