@@ -1,4 +1,4 @@
-// 2021-03-29 12:44:02
+// 2021-03-29 22:20:10
 #event properties (no comments/etc. here are saved)
 parent_index = -1;
 uses_physics = false;
@@ -21,6 +21,27 @@ pressX = 0;
 pressY = 0;
 
 avrFps = 0;
+
+var _s = ds_stack_create(),
+    _a = [];
+    
+var _time = current_time;
+
+for(i = 0; i < 100000; i++)
+{
+    ds_stack_push(_s, 0);
+}
+
+console.log(current_time-_time);
+
+_time = current_time;
+
+for(i = 0; i < 100000; i++)
+{
+    _a[i] = 0;
+}
+
+console.log(current_time-_time);
 
 #region Camera
 view_enabled = true;

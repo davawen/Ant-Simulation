@@ -1,4 +1,4 @@
-// 2021-03-29 12:44:13
+// 2021-03-29 22:15:53
 #region Nest Mechanics
 
 function Nest(_x: number, _y: number, _size: number, _amount: int) constructor
@@ -425,43 +425,50 @@ function Quad(_r: Rectangle, _c: int, _md: int) constructor
         }
     }
     
-    static kNearest = function(x: number, y: number, k: int, nodes: Quad[]?, found: Pheromone[]?)->Pheromone[]
+    static kNearest = function(pos: Vector2, k: int)->Pheromone[]
     {
-        if(!self.r.contain(new Vector2(x, y))) return [];
+        var stack: Quad[] = [ self ];
         
-        nodes ??= [];
-        found ??= [];
         
-        array_push(nodes, self);
-        
-        if(!self.divided) //Reached end of tree
-        {
-            var l = array_length(self.points);
-            for(i = 0; i < l; i++)
-            {
-                if(array_length(found) > k) break;
-                
-                array_push(found, self.points[i]);
-            }
-        }
-        else
-        {
-            self.nw.kNearest(x, y, k, nodes, found);
-            self.ne.kNearest(x, y, k, nodes, found);
-            self.sw.kNearest(x, y, k, nodes, found);
-            self.se.kNearest(x, y, k, nodes, found);
-            
-            var l = array_length(self.points);
-            for(i = 0; i < l; i++)
-            {
-                if(array_length(found) > k) break;
-                
-                array_push(found, self.points[i]);
-            }
-        }
-        
-        return found;
     }
+    
+    // static kNearest = function(x: number, y: number, k: int, nodes: Quad[]?, found: Pheromone[]?)->Pheromone[]
+    // {
+    //     if(!self.r.contain(new Vector2(x, y))) return [];
+        
+    //     nodes ??= [];
+    //     found ??= [];
+        
+    //     array_push(nodes, self);
+        
+    //     if(!self.divided) //Reached end of tree
+    //     {
+    //         var l = array_length(self.points);
+    //         for(i = 0; i < l; i++)
+    //         {
+    //             if(array_length(found) > k) break;
+                
+    //             array_push(found, self.points[i]);
+    //         }
+    //     }
+    //     else
+    //     {
+    //         self.nw.kNearest(x, y, k, nodes, found);
+    //         self.ne.kNearest(x, y, k, nodes, found);
+    //         self.sw.kNearest(x, y, k, nodes, found);
+    //         self.se.kNearest(x, y, k, nodes, found);
+            
+    //         var l = array_length(self.points);
+    //         for(i = 0; i < l; i++)
+    //         {
+    //             if(array_length(found) > k) break;
+                
+    //             array_push(found, self.points[i]);
+    //         }
+    //     }
+        
+    //     return found;
+    // }
     
     static query = function(range: Rectangle, state: int, found: Pheromone[]?)->Pheromone[]
     {

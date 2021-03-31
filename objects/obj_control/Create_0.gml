@@ -16,6 +16,27 @@ pressY = 0;
 
 avrFps = 0;
 
+var _s = ds_stack_create(),
+    _a = [];
+    
+var _time = current_time;
+
+for(i = 0; i < 100000; i++)
+{
+    ds_stack_push(_s, 0);
+}
+
+console.log(current_time-_time);
+
+_time = current_time;
+
+for(i = 0; i < 100000; i++)
+{
+    _a[i] = 0;
+}
+
+console.log(current_time-_time);
+
 #region Camera
 view_enabled = true;
 view_visible[0] = true;
